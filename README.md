@@ -1,3 +1,10 @@
+### excelent cu easyocr
+Using CPU. Note: This module is much faster with a GPU.
+Downloading detection model, please wait. This may take several minutes depending upon your network connection.
+C:\Users\Harry\.EasyOCR\model
+
+##cu tesseract
+
 pip install pytesseract Pillow opencv-python
 
 ChatGPT nu rezolvă problema specifică a notariatelor:
