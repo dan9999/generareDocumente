@@ -5,7 +5,7 @@ Pentru Windows: descarcă Tesseract de la https://github.com/UB-Mannheim/tessera
 """
 
 import pytesseract
-#from PIL import Image
+from PIL import Image
 import cv2
 import re
 import json
@@ -23,27 +23,39 @@ class BuletinExtractor:
     def __init__(self):
         self.date_extrase = {}
 
-    def preprocesseaza_imagine(self, cale_imagine):
-        """Îmbunătățește imaginea pentru OCR mai bun"""
-        # Citește imaginea
-        img = cv2.imread(cale_imagine)
+    def preproceseaza_imagine(self,cale_buletin):
+        img = cv2.imread(cale_buletin)
+        height, width = img.shape[:2]
 
-        # Convertește în grayscale
+        # Dacă imaginea e mică, upscale și procesare agresivă
+        if width < 2500 or height < 2000:
+            img = cv2.resize(img, None, fx=1.7, fy=1.7, interpolation=cv2.INTER_CUBIC)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            gray = cv2.convertScaleAbs(gray, alpha=1.6, beta=10)
+            gray = cv2.GaussianBlur(gray, (3, 3), 0)
+            thresh = cv2.adaptiveThreshold(
+                gray, 255,
+                cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY,
+                31, 10
+            )
+            kernel = np.array([[0, -1, 0],
+                               [-1, 5, -1],
+                               [0, -1, 0]])
+            sharp = cv2.filter2D(thresh, -1, kernel)
+            return sharp
+
+        # Dacă imaginea e deja mare, preprocesare simplă
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # Aplică threshold pentru contrast mai bun
         _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-
-        # Reduce noise
         denoised = cv2.fastNlMeansDenoising(thresh)
-
         return denoised
 
     def extrage_text_ocr(self, cale_imagine):
         """Extrage text din imagine folosind Tesseract OCR"""
         try:
             # Preprocessare imagine
-            img_procesata = self.preprocesseaza_imagine(cale_imagine)
+            img_procesata = self.preproceseaza_imagine(cale_imagine)
 
             # Extrage text cu configurare pentru limba română
             config = '--oem 3 --psm 6 -l ron+eng'
@@ -55,83 +67,57 @@ class BuletinExtractor:
             return ""
 
     def extrage_cnp(self, text):
-        """Extrage CNP-ul din text"""
-        # Caută în zona MRZ mai întâi (mai fiabil)
-        # Format MRZ: 7409071M2809078 (după cod țară ROU)
-        mrz_cnp_pattern = r'R[O0]U(\d{7})[MF](\d{6})'
-        match = re.search(mrz_cnp_pattern, text)
-        if match:
-            # Reconstruiește CNP-ul complet (primele 7 + ultimele 6 cifre)
-            cnp_partial = match.group(1) + match.group(2)
-            # Caută CNP complet în text (13 cifre)
-            full_cnp_pattern = r'\b[1-8]' + cnp_partial[:5] + r'\d{7}\b'
-            full_match = re.search(full_cnp_pattern, text)
-            if full_match:
-                return full_match.group(0)
+        """
+        Extrage CNP din linia MRZ (cea mai sigură metodă).
+        MRZ linia 2 (format CI România):
+        PFFFFF<1ROUYYYYMMDDCEXPDDMMYYY...
+        """
+        # găsește linia MRZ cu 30–36 caractere
+        lines = text.splitlines()
+        mrz = None
+        for l in lines:
+            l_stripped = l.strip().replace(" ", "")
+            if len(l_stripped) in range(30, 37):
+                mrz = l_stripped
+                break
 
-        # Fallback: caută pattern de 13 cifre direct
-        pattern = r'\b[1-8]\d{12}\b'
-        match = re.search(pattern, text)
-        return match.group(0) if match else None
+        if mrz:
+            # caută secvența ROU + CNP 13 cifre aproximat
+            m = re.search(r'R[O0]U([0-9]{13})', mrz)
+            if m:
+                return m.group(1)
+
+        # fallback: pattern direct 13 cifre
+        m = re.search(r'\b[1-8]\d{12}\b', text)
+        return m.group(0) if m else None
 
     def extrage_nume(self, text):
-        """Extrage numele din text sau din zona MRZ"""
-        # Prioritate 1: Extrage din zona MRZ (Machine Readable Zone) - CEL MAI FIABIL!
-        # Format MRZ: IDROUOPREA<<DAN<KHARRY
-        mrz_pattern = r'IDR[O0]U([A-Z]+)<<'
-        match = re.search(mrz_pattern, text)
-        if match:
-            nume = match.group(1).strip()
-            # Verifică că nu e prea scurt (minim 2 caractere)
-            if len(nume) >= 2:
-                return nume
-
-        # Prioritate 2: Caută pattern alternativ în MRZ
-        # Uneori apare ca: TDROUOPREA<<
-        mrz_alt = r'[TI]DR[O0]U([A-Z]{3,})<<'
-        match = re.search(mrz_alt, text)
-        if match:
-            return match.group(1).strip()
-
-        # Fallback: caută după cuvinte cheie în text normal (MAI PUȚIN FIABIL)
-        patterns = [
-            r'Last\s+name[:\s]+([A-ZĂÂÎȘȚ]{3,})',
-            r'Nume[:/\s]+([A-ZĂÂÎȘȚ]{3,})',
-            r'NUME[:/\s]+([A-ZĂÂÎȘȚ]{3,})',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                # Exclude cuvinte comune (Nom, Name, etc)
-                nume = match.group(1).strip()
-                if nume not in ['NOM', 'NAME', 'LAST', 'NUME']:
-                    return nume
+        """Extrage numele din zona MRZ mai robust"""
+        mrz_match = re.search(r'IDR[O0]U([A-Z<]+)<<', text)
+        if mrz_match:
+            raw = mrz_match.group(1)
+            # Înlocuiește < cu spațiu și curăță eventualele caractere nealfabetice
+            nume = re.sub(r'[^A-ZĂÂÎȘȚ\s]', '', raw.replace('<', ' ')).strip()
+            # Ia doar primul segment (nume de familie)
+            nume = nume.split()[0] if nume else None
+            return nume
         return None
 
     def extrage_prenume(self, text):
-        """Extrage prenumele din text sau din zona MRZ"""
-        # Încearcă să extragă din zona MRZ (Machine Readable Zone)
-        # Format MRZ: IDROUOPREA<<DAN<KHARRY sau OPREA<<DAN<HARRY
-        mrz_pattern = r'<<([A-Z]+)<+([A-Z]+)'
-        match = re.search(mrz_pattern, text)
-        if match:
-            # Returnează primul prenume și al doilea (dacă există)
-            prenume1 = match.group(1).strip()
-            prenume2 = match.group(2).strip() if match.group(2) else ''
-            return f"{prenume1} {prenume2}".strip()
-
-        # Fallback: caută după cuvinte cheie
-        patterns = [
-            r'Prenume[:/\s]+([A-ZĂÂÎȘȚ\s]+?)(?=\n|Nationalit|Data)',
-            r'PRENUME[:/\s]+([A-ZĂÂÎȘȚ\s]+?)(?=\n|NATIONALIT|DATA)',
-            r'First\s+name[:\s]+([A-ZĂÂÎȘȚ\s]+)',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                return match.group(1).strip()
+        """Extrage prenumele din MRZ mai robust, fără să returneze None din cauza artefactelor OCR"""
+        # Caută zona MRZ a prenumelor după << (după nume de familie)
+        mrz_match = re.search(r'<<([A-Z<]+)', text)
+        if mrz_match:
+            raw = mrz_match.group(1)
+            # Înlocuiește toate < cu spațiu
+            raw = raw.replace('<', ' ')
+            # Curăță caractere nealfabetice generate de OCR
+            raw = re.sub(r'[^A-ZĂÂÎȘȚ\s]', '', raw)
+            # Împarte la spații și elimină cuvintele goale
+            parts = [p.strip() for p in raw.split() if p.strip()]
+            # Returnează prenumele concatenate
+            if parts:
+                return ' '.join(parts)
         return None
 
     def extrage_data_nastere(self, cnp):
@@ -158,28 +144,24 @@ class BuletinExtractor:
             return None
 
     def extrage_serie_numar(self, text):
-        """Extrage seria și numărul buletinului"""
-        # Prioritate 1: Caută în linia cu SERIA și numărul
-        # Ex: "RK Nn 187008" sau "RK 187008"
-        seria_pattern = r'\bSERIA.*?([A-Z]{2})\s*[Nn]*\s*(\d{6})'
-        match = re.search(seria_pattern, text, re.IGNORECASE)
+        """
+        Extrage seria și numărul buletinului din text,
+        ignorând eventuale erori OCR precum 'np'.
+        """
+        # caută pattern: 2 litere + orice text + 6 cifre
+        match = re.search(r'\b([A-Z]{2})\s*\w*\s*(\d{6})\b', text, re.IGNORECASE)
         if match:
-            return f"{match.group(1)} {match.group(2)}"
-
-        # Prioritate 2: Caută în zona MRZ
-        # Format: R8K187008 sau similar (linia a doua MRZ)
-        mrz_pattern = r'\b([A-Z])[\s]*([0-9][A-Z0-9])\s*(\d{6})<'
-        match = re.search(mrz_pattern, text)
-        if match:
-            serie = match.group(1) + match.group(2).replace(' ', '')
-            numar = match.group(3)
+            serie = match.group(1).upper()
+            numar = match.group(2)
             return f"{serie} {numar}"
 
-        # Fallback: Pattern standard (2-3 litere + 6 cifre)
-        pattern = r'\b([A-Z]{2,3})\s*(\d{6})\b'
-        match = re.search(pattern, text)
-        if match:
-            return f"{match.group(1)} {match.group(2)}"
+        # fallback MRZ: prima literă + cifra/litera + 6 cifre
+        match_mrz = re.search(r'\b([A-Z])[0-9A-Z]?(\d{6})<', text)
+        if match_mrz:
+            serie = match_mrz.group(1)
+            numar = match_mrz.group(2)
+            return f"{serie} {numar}"
+
         return None
 
     def valideaza_cnp(self, cnp):
@@ -300,8 +282,10 @@ if __name__ == "__main__":
     try:
         # Procesează buletinul
         date = extractor.proceseaza_buletin(cale_buletin)
-
+        img = Image.open(cale_buletin)
         # Afișează rezultatele
+        print("\n=== REZOLUTIE ===")
+        print(f"Rezoluția imaginii: {img.width} x {img.height} pixeli")
         print("\n=== REZULTATE ===")
         print(f"Nume: {date.get('nume', 'N/A')}")
         print(f"Prenume: {date.get('prenume', 'N/A')}")
