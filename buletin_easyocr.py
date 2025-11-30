@@ -102,6 +102,67 @@ class BuletinExtractor:
 
         return nume, prenume
 
+    def extrage_loc_nastere(self, text: str) -> str | None:
+        lines = text.splitlines()
+
+        for i, line in enumerate(lines):
+            l = line.lower()
+
+            # Verifică MAI ÎNTÂI dacă există 'loc'
+            if 'loc' not in l:
+                continue
+
+            # APOI verifică dacă există și pattern-ul de naștere
+            if ('naște' in l or 'naste' in l or 'nașter' in l) or \
+                    ('lieu' in l and 'naiss' in l) or \
+                    ('place' in l and 'birth' in l):
+
+                # Caută următoarea linie rezonabilă
+                for j in range(1, 5):
+                    if i + j < len(lines):
+                        candidate = lines[i + j].strip()
+                        if len(candidate) > 4:
+                            # Curățare
+                            candidate = re.sub(r'[^a-zA-ZăâîșțĂÂÎȘȚ\s.-]', '', candidate)
+                            candidate = re.sub(r'\s+', ' ', candidate).strip()
+                            if len(candidate) > 4:
+                                return candidate
+
+        return None
+
+
+
+    def extrage_domiciliu(self, text):
+        """
+        Extrage adresa de domiciliu (1–3 linii după etichetă).
+        """
+
+        lines = text.splitlines()
+        clean = [re.sub(r'[^A-Za-z0-9ĂÂÎȘȚăâîșț\s\.,/-]', '', ln).strip() for ln in lines]
+
+        # acoperă toate variantele posibile
+        pattern = r'domicil|adress|adres|address'
+
+        for i, ln in enumerate(clean):
+            if re.search(pattern, ln, re.IGNORECASE):
+                rezultate = []
+
+                # în mod normal, adresa ocupă două linii
+                for k in range(1, 4):  # luăm până la 3 linii după etichetă
+                    if i + k < len(clean):
+                        ln2 = clean[i + k]
+
+                        # oprim dacă apare CNP, serie, autoritate etc.
+                        if re.search(r'CNP|SERIE|EMISA|VALAB', ln2, re.IGNORECASE):
+                            break
+
+                        if ln2:
+                            rezultate.append(ln2)
+
+                if rezultate:
+                    return ", ".join(rezultate)
+
+        return None
 
     def extrage_data_nastere(self, cnp):
         if not cnp or len(cnp) != 13:
@@ -166,6 +227,8 @@ class BuletinExtractor:
 
         cnp = self.extrage_cnp(text_complet)
         nume, prenume = extractor.extrage_nume_prenume(text_complet)
+        loc_nastere = extractor.extrage_loc_nastere(text_complet)
+        domiciliu = extractor.extrage_domiciliu(text_complet)
 
         # nume = self.extrage_nume(text_complet)
         # prenume = self.extrage_prenume(text_complet)
@@ -177,6 +240,8 @@ class BuletinExtractor:
         self.date_extrase = {
             'nume': nume,
             'prenume': prenume,
+            'loc_nastere': loc_nastere,
+            'domiciliu': domiciliu,
             'cnp': cnp,
             'cnp_valid': cnp_valid,
             'data_nastere': data_nastere,
@@ -192,6 +257,8 @@ class BuletinExtractor:
             f.write("=== DATE EXTRASE DIN BULETIN ===\n\n")
             f.write(f"Nume: {self.date_extrase.get('nume', 'N/A')}\n")
             f.write(f"Prenume: {self.date_extrase.get('prenume', 'N/A')}\n")
+            f.write(f"Loc nastere: {self.date_extrase.get('loc_nastere', 'N/A')}\n")
+            f.write(f"Domiciliu: {self.date_extrase.get('domiciliu', 'N/A')}\n")
             f.write(f"CNP: {self.date_extrase.get('cnp', 'N/A')}\n")
             f.write(f"CNP Valid: {'Da' if self.date_extrase.get('cnp_valid') else 'Nu'}\n")
             f.write(f"Data naștere: {self.date_extrase.get('data_nastere', 'N/A')}\n")
@@ -211,7 +278,7 @@ class BuletinExtractor:
 # --- Exemplu de utilizare ---
 if __name__ == "__main__":
     extractor = BuletinExtractor()
-    cale_buletin = "C:/Users/Harry/Documents/Buletine/CI_Oprea_Dan.jpg"  # sau .png/.jpeg
+    cale_buletin = "C:/Users/Harry/Documents/Buletine/oana_rotit.jpg"  # sau .png/.jpeg
 
     try:
         date = extractor.proceseaza_buletin(cale_buletin)
@@ -221,6 +288,8 @@ if __name__ == "__main__":
         print("\n=== REZULTATE ===")
         print(f"Nume: {date.get('nume', 'N/A')}")
         print(f"Prenume: {date.get('prenume', 'N/A')}")
+        print(f"Loc nastere: {date.get('loc_nastere', 'N/A')}")
+        print(f"Domiciliu: {date.get('domiciliu', 'N/A')}")
         print(f"CNP: {date.get('cnp', 'N/A')}")
         print(f"CNP Valid: {'✓ Da' if date.get('cnp_valid') else '✗ Nu'}")
         print(f"Data naștere: {date.get('data_nastere', 'N/A')}")
