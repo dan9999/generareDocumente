@@ -108,56 +108,69 @@ class BuletinExtractor:
         for i, line in enumerate(lines):
             l = line.lower()
 
-            # Verifică MAI ÎNTÂI dacă există 'loc'
             if 'loc' not in l:
                 continue
 
-            # APOI verifică dacă există și pattern-ul de naștere
-            if ('naște' in l or 'naste' in l or 'nașter' in l) or \
+            if ('naște' in l or 'naste' in l or 'nașter' in l or 'nastc' in l) or \
                     ('lieu' in l and 'naiss' in l) or \
                     ('place' in l and 'birth' in l):
 
-                # Caută următoarea linie rezonabilă
+                location_parts = []
+
                 for j in range(1, 5):
-                    if i + j < len(lines):
-                        candidate = lines[i + j].strip()
-                        if len(candidate) > 4:
-                            # Curățare
-                            candidate = re.sub(r'[^a-zA-ZăâîșțĂÂÎȘȚ\s.-]', '', candidate)
-                            candidate = re.sub(r'\s+', ' ', candidate).strip()
-                            if len(candidate) > 4:
-                                return candidate
+                    if i + j >= len(lines):
+                        break
+
+                    candidate_line = lines[i + j]
+                    candidate_lower = candidate_line.lower().strip()
+
+                    # Verificare SIMPLĂ - dacă începe cu "dom" sau "adr"
+                    if candidate_lower.startswith(('dom', 'adr', 'cnp', 'ser')):
+                        break
+
+                    candidate_clean = candidate_line.strip()
+                    if len(candidate_clean) > 2:
+                        candidate = re.sub(r'[^a-zA-Z0-9ăâîșțĂÂÎȘȚ\s.,-]', '', candidate_clean)
+                        candidate = re.sub(r'\s+', ' ', candidate).strip()
+
+                        if len(candidate) > 2:
+                            location_parts.append(candidate)
+
+                if location_parts:
+                    return " ".join(location_parts)
 
         return None
 
-
-
     def extrage_domiciliu(self, text):
         """
-        Extrage adresa de domiciliu (1–3 linii după etichetă).
+        Extrage adresa de domiciliu - varianta robustă pentru OCR corupt.
         """
-
         lines = text.splitlines()
-        clean = [re.sub(r'[^A-Za-z0-9ĂÂÎȘȚăâîșț\s\.,/-]', '', ln).strip() for ln in lines]
 
-        # acoperă toate variantele posibile
-        pattern = r'domicil|adress|adres|address'
+        for i, line in enumerate(lines):
+            line_lower = line.lower().replace(' ', '')
 
-        for i, ln in enumerate(clean):
-            if re.search(pattern, ln, re.IGNORECASE):
+            # Verifică doar primele caractere pentru a detecta variante corupte
+            if line_lower.startswith(('dom', 'adr')):
                 rezultate = []
 
-                # în mod normal, adresa ocupă două linii
-                for k in range(1, 4):  # luăm până la 3 linii după etichetă
-                    if i + k < len(clean):
-                        ln2 = clean[i + k]
+                # Colectează următoarele 4-5 linii (adresa poate fi mai lungă)
+                for k in range(1, 6):
+                    if i + k >= len(lines):
+                        break
 
-                        # oprim dacă apare CNP, serie, autoritate etc.
-                        if re.search(r'CNP|SERIE|EMISA|VALAB', ln2, re.IGNORECASE):
-                            break
+                    candidate_line = lines[i + k].strip()
+                    candidate_lower = candidate_line.lower()
 
-                        if ln2:
-                            rezultate.append(ln2)
+                    # Oprim dacă apare următorul câmp
+                    if any(stop_word in candidate_lower for stop_word in
+                           ['emisa', 'delivree', 'issued', 'valabil', 'valid', 'cnp', 'serie']):
+                        break
+
+                    if candidate_line:
+                        clean_line = re.sub(r'[^A-Za-z0-9ĂÂÎȘȚăâîșț\s\.,/-]', '', candidate_line).strip()
+                        if clean_line and len(clean_line) > 2:
+                            rezultate.append(clean_line)
 
                 if rezultate:
                     return ", ".join(rezultate)
@@ -218,6 +231,75 @@ class BuletinExtractor:
         except:
             return None
 
+    def extrage_emisa_si_ladata(self, text: str) -> tuple[str | None, str | None]:
+        lines = text.splitlines()
+        emisa = None
+        ladata = None
+
+        # Cuvinte cheie pentru "emisă" - variante corecte și corupte
+        emis_keywords = ['emis', 'deliv', 'issu', 'deli', 'em}', 'em', 'emi', 'ems', 'detdeli']
+
+        # Cuvinte cheie pentru "valabilitate" - variante corecte și corupte
+        valab_keywords = ['valab', 'valid', 'vulab', 'valb', 'vlab', 'vlid', 'valldito', 'valldlty']
+
+        for i, line in enumerate(lines):
+            line_lower = line.lower().strip()
+
+            # Verifică doar pentru cuvinte de "emisă" (nu și pentru valabilitate)
+            found_emis_keyword = any(keyword in line_lower for keyword in emis_keywords)
+
+            if found_emis_keyword:
+                print(f"DEBUG: Found emis keyword in line {i}: {line}")
+
+                # Caută în următoarele 2-4 linii
+                for j in range(1, 5):
+                    if i + j >= len(lines):
+                        break
+
+                    candidate_line = lines[i + j].strip()
+                    if not candidate_line:
+                        continue
+
+                    print(f"DEBUG: Checking line {i + j}: {candidate_line}")
+
+                    # Verifică dacă e dată (prioritate 1)
+                    if not ladata:
+                        date_match = re.search(r'\b\d{1,2}\.\d{1,2}\.\d{2,4}\b', candidate_line)
+                        if date_match:
+                            ladata = date_match.group()
+                            print(f"DEBUG: Found date: {ladata}")
+                            continue
+
+                    # Verifică dacă e autoritate emitentă (prioritate 2)
+                    if not emisa:
+                        # Exclude linii care conțin cuvinte de valabilitate sau alte cuvinte cheie
+                        if (any(kw in candidate_line.lower() for kw in valab_keywords) or
+                                any(kw in candidate_line.lower() for kw in emis_keywords) or
+                                re.search(r'\b\d{1,2}\.\d{1,2}\.\d{2,4}\b', candidate_line) or
+                                any(word in candidate_line.lower() for word in ['domiciliu', 'adres', 'address'])):
+                            continue
+
+                        # Dacă linia are cel puțin 3 caractere și arată ca text normal
+                        if len(candidate_line) >= 3 and any(c.isalpha() for c in candidate_line):
+                            # Curăță textul
+                            clean_text = re.sub(r'[^a-zA-Z0-9ăâîșțĂÂÎȘȚ\s.,-]', '', candidate_line).strip()
+                            if len(clean_text) >= 3:
+                                emisa = clean_text
+                                print(f"DEBUG: Found emisa: {emisa}")
+
+        return emisa, ladata
+
+
+
+
+
+
+
+
+
+
+
+
     def proceseaza_buletin(self, cale_imagine):
         print(f"Procesez buletinul: {cale_imagine}")
         text_complet = self.extrage_text_ocr(cale_imagine)
@@ -235,6 +317,8 @@ class BuletinExtractor:
         serie_numar = self.extrage_serie_numar(text_complet)
         data_nastere = self.extrage_data_nastere(cnp) if cnp else None
         varsta = self.calculeaza_varsta(data_nastere) if data_nastere else None
+        emisa, ladata = self.extrage_emisa_si_ladata(text_complet)
+
         cnp_valid = self.valideaza_cnp(cnp) if cnp else False
 
         self.date_extrase = {
@@ -247,6 +331,8 @@ class BuletinExtractor:
             'data_nastere': data_nastere,
             'varsta': varsta,
             'serie_numar': serie_numar,
+            'emisa' : emisa,
+            'ladata': ladata,
             'text_complet': text_complet
         }
 
@@ -263,6 +349,8 @@ class BuletinExtractor:
             f.write(f"CNP Valid: {'Da' if self.date_extrase.get('cnp_valid') else 'Nu'}\n")
             f.write(f"Data naștere: {self.date_extrase.get('data_nastere', 'N/A')}\n")
             f.write(f"Vârsta: {self.date_extrase.get('varsta', 'N/A')} ani\n")
+            f.write(f"Emisa de: {self.date_extrase.get('emisa', 'N/A')} ani\n")
+            f.write(f"La data: {self.date_extrase.get('ladata', 'N/A')} ani\n")
             f.write(f"Serie/Număr: {self.date_extrase.get('serie_numar', 'N/A')}\n")
             f.write(f"\n=== TEXT COMPLET EXTRAS ===\n")
             f.write(self.date_extrase.get('text_complet', ''))
@@ -278,7 +366,7 @@ class BuletinExtractor:
 # --- Exemplu de utilizare ---
 if __name__ == "__main__":
     extractor = BuletinExtractor()
-    cale_buletin = "C:/Users/Harry/Documents/Buletine/oana_rotit.jpg"  # sau .png/.jpeg
+    cale_buletin = "C:/Users/Harry/Documents/Buletine/popescu.jpeg"  # sau .png/.jpeg
 
     try:
         date = extractor.proceseaza_buletin(cale_buletin)
@@ -294,6 +382,8 @@ if __name__ == "__main__":
         print(f"CNP Valid: {'✓ Da' if date.get('cnp_valid') else '✗ Nu'}")
         print(f"Data naștere: {date.get('data_nastere', 'N/A')}")
         print(f"Vârsta: {date.get('varsta', 'N/A')} ani")
+        print(f"Emisa de: {date.get('emisa', 'N/A')}")
+        print(f"La data: {date.get('ladata', 'N/A')}")
         print(f"Serie/Număr: {date.get('serie_numar', 'N/A')}")
 
         extractor.salveaza_txt("date_buletin.txt")
