@@ -68,15 +68,46 @@ elif st.session_state.tip_act_selectat == "Declarație acord călătorie minor":
             # Rând cu 4 coloane
             c1, c2, c3, c4 = st.columns(4)
 
+            # ========== MINOR ==========
             with c1:
                 nume_minor = st.text_input("Nume minor:", value="Maria Popescu")
 
+                uploaded_minor = st.file_uploader("Încarcă buletin minor", type=["jpg", "jpeg", "png"], key="upload_minor")
+
+                if uploaded_minor and st.button("📄 Adaugă buletin minor", key="btn_minor"):
+                    import tempfile
+                    with st.spinner("Se procesează buletinul minorului..."):
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                            tmp.write(uploaded_minor.read())
+                            cale_temp = tmp.name
+
+                        date_minor = st.session_state.extractor.proceseaza_buletin(cale_temp)
+
+                        if date_minor.get("nume") and date_minor.get("prenume"):
+                            st.session_state["nume_minor"] = f"{date_minor['nume']} {date_minor['prenume']}"
+
+                        st.session_state["date_minor_text"] = "\n".join([
+                            f"Nume: {date_minor.get('nume','')}",
+                            f"Prenume: {date_minor.get('prenume','')}",
+                            f"CNP: {date_minor.get('cnp','')}",
+                            f"Data naștere: {date_minor.get('data_nastere','')}",
+                            f"Loc naștere: {date_minor.get('loc_nastere','')}",
+                            f"Domiciliu: {date_minor.get('domiciliu','')}",
+                            f"Serie/Număr: {date_minor.get('serie_numar','')}",
+                            f"Emisă de: {date_minor.get('emisa','')}",
+                            f"La data: {date_minor.get('ladata','')}",
+                        ])
+
+                if "date_minor_text" in st.session_state:
+                    st.text_area("📋 Date extrase", st.session_state["date_minor_text"], height=200, key="text_minor")
+
+            # ========== TATĂ ==========
             with c2:
                 nume_tata = st.text_input("Nume tată:", value="Ion Popescu")
 
-                uploaded_tata = st.file_uploader("Încarcă buletin tată", type=["jpg", "jpeg", "png"])
+                uploaded_tata = st.file_uploader("Încarcă buletin tată", type=["jpg", "jpeg", "png"], key="upload_tata")
 
-                if uploaded_tata and st.button("📄 Adaugă buletin tată"):
+                if uploaded_tata and st.button("📄 Adaugă buletin tată", key="btn_tata"):
                     import tempfile
                     with st.spinner("Se procesează buletinul tatălui..."):
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
@@ -101,13 +132,73 @@ elif st.session_state.tip_act_selectat == "Declarație acord călătorie minor":
                         ])
 
                 if "date_tata_text" in st.session_state:
-                    st.text_area("📋 Date extrase", st.session_state["date_tata_text"], height=200)
+                    st.text_area("📋 Date extrase", st.session_state["date_tata_text"], height=200, key="text_tata")
 
+            # ========== MAMĂ ==========
             with c3:
                 nume_mama = st.text_input("Nume mamă:", value="Elena Popescu")
 
+                uploaded_mama = st.file_uploader("Încarcă buletin mamă", type=["jpg", "jpeg", "png"], key="upload_mama")
+
+                if uploaded_mama and st.button("📄 Adaugă buletin mamă", key="btn_mama"):
+                    import tempfile
+                    with st.spinner("Se procesează buletinul mamei..."):
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                            tmp.write(uploaded_mama.read())
+                            cale_temp = tmp.name
+
+                        date_mama = st.session_state.extractor.proceseaza_buletin(cale_temp)
+
+                        if date_mama.get("nume") and date_mama.get("prenume"):
+                            st.session_state["nume_mama"] = f"{date_mama['nume']} {date_mama['prenume']}"
+
+                        st.session_state["date_mama_text"] = "\n".join([
+                            f"Nume: {date_mama.get('nume','')}",
+                            f"Prenume: {date_mama.get('prenume','')}",
+                            f"CNP: {date_mama.get('cnp','')}",
+                            f"Data naștere: {date_mama.get('data_nastere','')}",
+                            f"Loc naștere: {date_mama.get('loc_nastere','')}",
+                            f"Domiciliu: {date_mama.get('domiciliu','')}",
+                            f"Serie/Număr: {date_mama.get('serie_numar','')}",
+                            f"Emisă de: {date_mama.get('emisa','')}",
+                            f"La data: {date_mama.get('ladata','')}",
+                        ])
+
+                if "date_mama_text" in st.session_state:
+                    st.text_area("📋 Date extrase", st.session_state["date_mama_text"], height=200, key="text_mama")
+
+            # ========== ÎNSOȚITOR ==========
             with c4:
                 insotitor = st.text_input("Însoțitor:", value="Elena Popescu")
+
+                uploaded_insotitor = st.file_uploader("Încarcă buletin însoțitor", type=["jpg", "jpeg", "png"], key="upload_insotitor")
+
+                if uploaded_insotitor and st.button("📄 Adaugă buletin însoțitor", key="btn_insotitor"):
+                    import tempfile
+                    with st.spinner("Se procesează buletinul însoțitorului..."):
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                            tmp.write(uploaded_insotitor.read())
+                            cale_temp = tmp.name
+
+                        date_insotitor = st.session_state.extractor.proceseaza_buletin(cale_temp)
+
+                        if date_insotitor.get("nume") and date_insotitor.get("prenume"):
+                            st.session_state["insotitor"] = f"{date_insotitor['nume']} {date_insotitor['prenume']}"
+
+                        st.session_state["date_insotitor_text"] = "\n".join([
+                            f"Nume: {date_insotitor.get('nume','')}",
+                            f"Prenume: {date_insotitor.get('prenume','')}",
+                            f"CNP: {date_insotitor.get('cnp','')}",
+                            f"Data naștere: {date_insotitor.get('data_nastere','')}",
+                            f"Loc naștere: {date_insotitor.get('loc_nastere','')}",
+                            f"Domiciliu: {date_insotitor.get('domiciliu','')}",
+                            f"Serie/Număr: {date_insotitor.get('serie_numar','')}",
+                            f"Emisă de: {date_insotitor.get('emisa','')}",
+                            f"La data: {date_insotitor.get('ladata','')}",
+                        ])
+
+                if "date_insotitor_text" in st.session_state:
+                    st.text_area("📋 Date extrase", st.session_state["date_insotitor_text"], height=200, key="text_insotitor")
 
             # Buton generare
             st.markdown("---")
