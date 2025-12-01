@@ -1,9 +1,13 @@
 {
-  "nume": "OPREA",
-  "prenume": "DAN KHARRY",
-  "cnp": "1740907416810",
-  "cnp_valid": false,
-  "data_nastere": "07.09.1974",
-  "varsta": 51,
-  "serie_numar": "R8K 187008"
+  "nume": "POPESCU-GAVRILĂ",
+  "prenume": "OCTAVIA-MARIA",
+  "loc_nastere": "Jud.BV Mun Făgăraș",
+  "domiciliu": "Mun.Bucuresti Sec, Str .Căderea Bastiliei nr.4244 et.1, 826",
+  "cnp": "2860129081812",
+  "cnp_valid": true,
+  "data_nastere": "29.01.1986",
+  "varsta": 39,
+  "serie_numar": "RZ 134881",
+  "emisa": "SPC.EP. Sector 1",
+  "ladata": "23.03.23"
 }

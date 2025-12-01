@@ -1,31 +1,58 @@
 === DATE EXTRASE DIN BULETIN ===
 
-Nume: OPREA
-Prenume: DAN KHARRY
-CNP: 1740907416810
-CNP Valid: Nu
-Data naștere: 07.09.1974
-Vârsta: 51 ani
-Serie/Număr: R8K 187008
+Nume: POPESCU-GAVRILĂ
+Prenume: OCTAVIA-MARIA
+Loc nastere: Jud.BV Mun Făgăraș
+Domiciliu: Mun.Bucuresti Sec, Str .Căderea Bastiliei nr.4244 et.1, 826
+CNP: 2860129081812
+CNP Valid: Da
+Data naștere: 29.01.1986
+Vârsta: 39 ani
+Emisa de: SPC.EP. Sector 1 ani
+La data: 23.03.23 ani
+Serie/Număr: RZ 134881
 
 === TEXT COMPLET EXTRAS ===
-stein 6 os ONO “a Oo apes te ome . oo . . - . —
-Jk J \ 4 / \ 7 fs ee
-— mR) /> Bs OMAN| A =
-, | D'IDENTITE CARTE DE IDENTITATE =
-| SERIA IDENTITY =
-em 1740907416810 RK Nn 187008 ‘apo
-- Fee - - Nume/Nom/Last name Loos 4 < R396C | mete
-‘renume/Prenom/First name; =” ~—
-So DAN HARRY liable o =
-| , id a ieiNationalite/Natiqnality a
-Pp Roman / ROU see SS ae
-: Mi Bucur, de naistance/Piace ot bieth —
-, : iun.Bucures ti $e CN aj ee =
-| | Domiciliu/Adresse)ad irs id : f] ~ \ SS 7 al
-_ Nun Bucuresti Secs Str Minin in Costin =
-— nr.45~47 bL.5 se. et4 ap.39 a
-827 B Emisé de/Deliveee par/issued by ON" Vadabilitate/Validite, Validity
-™ S.P.C.Z.F. Sector 1 22.08.18-07.09.2028 sm
-— - TDROUOPREA<<DAN<KHARRY <<<<<<<<KKKKKK<K
-R 8K 187008<1R0U7409071M280907814145140 |
+a4i8nayauBu
+Gu: 
+ROUMIANIE
+B
+NLA
+ROMVIANIA
+CARTE
+CARTE
+DE
+IDENTITATE
+IDENTITY
+D'IDENTITE
+SERIA RZ
+vr 134881
+CARD
+CNP
+2860129081812
+GOH50.
+NumelNomlLast name
+POPESCU-GAVRILĂ
+PrenumelPrenomlFirst name
+OCTAVIA-MARIA
+221
+Cetfțenle/NatlonalltelNatlonality
+SexlSexelSex
+Română
+ROU
+F
+Loc nașterelLieu de naissancelPlacg %( birtb
+Jud.BV Mun Făgăraș
+Domiciliu/AdresselAddress
+Mun.Bucuresti Sec 
+Str .Căderea 'Bastiliei nr.42'44 et.1
+826
+B
+Emisă delDelivree parllssued by
+ValabilitalelValiditelValidity
+SPC.EP. Sector 1
+23.03.23-03.08.2031
+I D ROUP0 P Es CU <GA VR I LA <<0 C TAVI A <MA RI A <
+RZ 134881<5 R0U8601296 F31080332081812 4
+Dnounhanntahtraonmetr
+ap.2
