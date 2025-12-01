@@ -11,7 +11,7 @@ if "tip_act_selectat" not in st.session_state:
 
 # Setare pagină
 st.set_page_config(
-    page_title="🏛️ Generator Acte Notariale cu AI",
+    page_title="Generator Acte Notariale cu AI",
     page_icon="🏛️",
     layout="wide"
 )
@@ -25,13 +25,17 @@ def reset_home():
 # ================= HEADER =================
 # Titlu cu tip act selectat
 if st.session_state.tip_act_selectat:
-    st.markdown(
-        f"<h1 style='margin-top:-40px;'>🏛️ Generator Acte Notariale cu AI - {st.session_state.tip_act_selectat}</h1>",
-        unsafe_allow_html=True)
-    # Buton Home
-    if st.button("🏠 Home", type="secondary"):
-        reset_home()
-        st.rerun()
+    col_icon, col_title = st.columns([0.5, 9.5])
+    with col_icon:
+        st.markdown("<div style='margin-top:8px;'>", unsafe_allow_html=True)
+        if st.button("🏛️", help="Înapoi la meniu principal"):
+            reset_home()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    with col_title:
+        st.markdown(
+            f"<h1 style='margin-top:-10px;'>Generator Acte Notariale cu AI - {st.session_state.tip_act_selectat}</h1>",
+            unsafe_allow_html=True)
 else:
     st.markdown("<h1 style='margin-top:-40px;'>🏛️ Generator Acte Notariale cu AI</h1>", unsafe_allow_html=True)
 
@@ -51,7 +55,6 @@ if st.session_state.tip_act_selectat is None:
     if tip_act:
         st.session_state.tip_act_selectat = tip_act
         st.rerun()
-
 # ================= FORMULARUL =================
 elif st.session_state.tip_act_selectat == "Declarație acord călătorie minor":
     col_left, col_right = st.columns([3, 1])
@@ -60,7 +63,7 @@ elif st.session_state.tip_act_selectat == "Declarație acord călătorie minor":
     #                          STÂNGA
     # ==========================================================
     with col_left:
-            st.header("🌍 Date persoane")
+            st.subheader("🌍 Date persoane")
 
             # Rând cu 4 coloane
             c1, c2, c3, c4 = st.columns(4)
