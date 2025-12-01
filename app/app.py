@@ -1,4 +1,8 @@
 import streamlit as st
+from buletin_easyocr import BuletinExtractor
+
+if "extractor" not in st.session_state:
+    st.session_state.extractor = BuletinExtractor()
 
 # Configurare pagină
 st.set_page_config(
@@ -43,6 +47,48 @@ with col_left:
         with col5:
             nume_tata = st.text_input("Nume tată:", value="Ion Popescu", help="Apasă Enter pentru a aplica")
 
+            # === Upload + OCR Buletin Tată ===
+            uploaded_tata = st.file_uploader("Încarcă buletin tată (jpg/png)",
+                                             type=["jpg", "jpeg", "png"],
+                                             key="upload_tata")
+
+            if uploaded_tata and st.button("📄 Adaugă buletin tată"):
+                import tempfile
+
+                with st.spinner("Se procesează buletinul tatălui..."):
+
+                    # Salvăm temporar imaginea încărcată
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                        tmp.write(uploaded_tata.read())
+                        cale_temp = tmp.name
+
+                    # Extragem datele
+
+                    date_tata = st.session_state.extractor.proceseaza_buletin(cale_temp)
+
+                    # Actualizăm numele tatălui dacă găsim nume + prenume
+                    if date_tata.get("nume") and date_tata.get("prenume"):
+                        nume_tata = f"{date_tata['nume']} {date_tata['prenume']}"
+                        st.session_state["nume_tata"] = nume_tata
+
+                    # Stocăm textul complet în textarea
+                    st.session_state["date_tata_text"] = "\n".join([
+                        f"Nume: {date_tata.get('nume', '')}",
+                        f"Prenume: {date_tata.get('prenume', '')}",
+                        f"CNP: {date_tata.get('cnp', '')}",
+                        f"Data naștere: {date_tata.get('data_nastere', '')}",
+                        f"Loc naștere: {date_tata.get('loc_nastere', '')}",
+                        f"Domiciliu: {date_tata.get('domiciliu', '')}",
+                        f"Serie/Număr: {date_tata.get('serie_numar', '')}",
+                        f"Emisă de: {date_tata.get('emisa', '')}",
+                        f"La data: {date_tata.get('ladata', '')}",
+                    ])
+
+            # Afișăm textarea cu datele extrase
+            if "date_tata_text" in st.session_state:
+                st.text_area("📋 Date extrase din buletin tată:",
+                             st.session_state["date_tata_text"],
+                             height=220)
         with col6:
             nume_mama = st.text_input("Nume mamă:", value="Elena Popescu", help="Apasă Enter pentru a aplica")
 

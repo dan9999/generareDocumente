@@ -308,9 +308,9 @@ class BuletinExtractor:
         print("=" * 50)
 
         cnp = self.extrage_cnp(text_complet)
-        nume, prenume = extractor.extrage_nume_prenume(text_complet)
-        loc_nastere = extractor.extrage_loc_nastere(text_complet)
-        domiciliu = extractor.extrage_domiciliu(text_complet)
+        nume, prenume = self.extrage_nume_prenume(text_complet)
+        loc_nastere = self.extrage_loc_nastere(text_complet)
+        domiciliu = self.extrage_domiciliu(text_complet)
 
         # nume = self.extrage_nume(text_complet)
         # prenume = self.extrage_prenume(text_complet)
@@ -363,34 +363,34 @@ class BuletinExtractor:
         print(f"✓ Date salvate în: {cale_output}")
 
 
-# --- Exemplu de utilizare ---
-if __name__ == "__main__":
-    extractor = BuletinExtractor()
-    cale_buletin = "C:/Users/Harry/Documents/Buletine/popescu.jpeg"  # sau .png/.jpeg
+# --- Exemplu de utilizare fara streamlit direct ca si script---
+# if __name__ == "__main__":
+#     extractor = BuletinExtractor()
+#     cale_buletin = "C:/Users/Harry/Documents/Buletine/popescu.jpeg"  # sau .png/.jpeg
+#
+#     try:
+#         date = extractor.proceseaza_buletin(cale_buletin)
+#         img = Image.open(cale_buletin)
+#         print("\n=== REZOLUTIE ===")
+#         print(f"Rezoluția imaginii: {img.width} x {img.height} pixeli")
+#         print("\n=== REZULTATE ===")
+#         print(f"Nume: {date.get('nume', 'N/A')}")
+#         print(f"Prenume: {date.get('prenume', 'N/A')}")
+#         print(f"Loc nastere: {date.get('loc_nastere', 'N/A')}")
+#         print(f"Domiciliu: {date.get('domiciliu', 'N/A')}")
+#         print(f"CNP: {date.get('cnp', 'N/A')}")
+#         print(f"CNP Valid: {'✓ Da' if date.get('cnp_valid') else '✗ Nu'}")
+#         print(f"Data naștere: {date.get('data_nastere', 'N/A')}")
+#         print(f"Vârsta: {date.get('varsta', 'N/A')} ani")
+#         print(f"Emisa de: {date.get('emisa', 'N/A')}")
+#         print(f"La data: {date.get('ladata', 'N/A')}")
+#         print(f"Serie/Număr: {date.get('serie_numar', 'N/A')}")
+#
+#         extractor.salveaza_txt("date_buletin.txt")
+#         extractor.salveaza_json("date_buletin.json")
 
-    try:
-        date = extractor.proceseaza_buletin(cale_buletin)
-        img = Image.open(cale_buletin)
-        print("\n=== REZOLUTIE ===")
-        print(f"Rezoluția imaginii: {img.width} x {img.height} pixeli")
-        print("\n=== REZULTATE ===")
-        print(f"Nume: {date.get('nume', 'N/A')}")
-        print(f"Prenume: {date.get('prenume', 'N/A')}")
-        print(f"Loc nastere: {date.get('loc_nastere', 'N/A')}")
-        print(f"Domiciliu: {date.get('domiciliu', 'N/A')}")
-        print(f"CNP: {date.get('cnp', 'N/A')}")
-        print(f"CNP Valid: {'✓ Da' if date.get('cnp_valid') else '✗ Nu'}")
-        print(f"Data naștere: {date.get('data_nastere', 'N/A')}")
-        print(f"Vârsta: {date.get('varsta', 'N/A')} ani")
-        print(f"Emisa de: {date.get('emisa', 'N/A')}")
-        print(f"La data: {date.get('ladata', 'N/A')}")
-        print(f"Serie/Număr: {date.get('serie_numar', 'N/A')}")
-
-        extractor.salveaza_txt("date_buletin.txt")
-        extractor.salveaza_json("date_buletin.json")
-
-    except FileNotFoundError:
-        print(f"⚠ Eroare: Fișierul '{cale_buletin}' nu a fost găsit!")
-        print("Asigură-te că ai o imagine a buletinului în același folder cu scriptul.")
-    except Exception as e:
-        print(f"⚠ Eroare: {e}")
+    # except FileNotFoundError:
+    #     print(f"⚠ Eroare: Fișierul '{cale_buletin}' nu a fost găsit!")
+    #     print("Asigură-te că ai o imagine a buletinului în același folder cu scriptul.")
+    # except Exception as e:
+    #     print(f"⚠ Eroare: {e}")
